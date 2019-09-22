@@ -55,10 +55,10 @@
  * @author Josh Bloch
  * @author Patrick O. Perry
  */
-int timsort(void *base, size_t nel, size_t width,
+void timsort(void *base, size_t nel, size_t width,
 	    int (*compar) (const void *, const void *));
 
-int timsort_r(void *base, size_t nel, size_t width,
+void timsort_r(void *base, size_t nel, size_t width,
                 int (*compar) (const void *, const void *, void *),
 		void *context);
 

@@ -1,11 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <sys/time.h>
-#include <string.h>
-#include "timsort/timsort.h"
 #include "utils/arg.h"
+#include "prepsort.h"
+#include "timsort/timsort.h"
+
 
 //the basic idea is to bucket sort the array/hash it just to the ratio of the value of element
 //to tMax times the size of the table. This doesn't sort the data but it does order it somewhat
@@ -17,186 +13,7 @@
 //more condusive to some sort functions. What I am currently exploring is independently sorting
 //each slot in the table as it's known that any item in slot n is less than any item in slot n+1
 
-#define SORT_NAME sorter
-typedef unsigned long stype; //define data type to sort (keep it 4 bytes for now)
-#define SORT_TYPE stype
 
-
-#include "sort/sort.h"
-
-//plug in whatever values you want here (i find len == tsize works best)
-#define loglen 23
-#define len (1<<loglen)  //length of array to be sorted
-#define logsize 23    //log of table size
-#define tsize (1<<logsize)  //actual table size
-
-
-//TODO kendall tau distance
-//TODO better ways to sort each slot
-//Adding a queue for each table slot maybe? https://stackoverflow.com/questions/3759112/whats-faster-inserting-into-a-priority-queue-or-sorting-retrospectively
-
-#define raPtr 1
-#ifdef raPtr
-#define raTablePtr 1
-//#define preBase
-#endif
-
-#define useFloat 1 //to use float division to get slot (otherwise uses lower logsize bits)
-#define superVer 1 //verifies sorted elements are exact right elements
-#define ver 1 //verifies elements were actually sorted
-
-//these #defines are the possible methods you can run (comment out and they wont run)
-
-//every set of 4 is a different sort method, i.e 0-3 uses normal mergesort
-/*#define NMS 0  //just running the sort algorithm on random data
-  #define GRNMS 1 //running sort algorithm on data with alot of 'runs'
-  #define PPNMS 2 //running sort sort after using my preprocessing method
-  #define PPGRNMS 3 //running sort on data with alot of 'runs' that was also preprocesses
-
-  //inplace mergesort
-  #define IMS 4
-  #define GRIMS 5
-  #define PPIMS 6
-  #define PPGRIMS 7*/
-
-//quicksort from sort.h
-#define CQS 8
-/*#define GRCQS 9
-  #define PPCQS 10
-  #define PPGRCQS 11
-
-  //quicksort from math.h
-  #define MQS 12 
-  #define GRMQS 13
-  #define PPMQS 14
-  #define PPGRMQS 15
-
-  //timsort from timsort.h (this idea for pre processing data
-  //was origionally with timsort in mind)
-  #define TS1 16 
-  #define GRTS1 17  
-  #define PPTS1 18  
-  #define PPGRTS1 19
-
-  //timsort from sort.h
-  #define TS2 20 
-  #define GRTS2 21  
-  #define PPTS2 22  
-  #define PPGRTS2 23
-
-  //sqrt sort from sort.h
-  #define SQ 24
-  #define GRSQ 25
-  #define PPSQ 26
-  #define PPGRSQ 27*/
-
-//insert sort on each slot of preproccessed data
-//note: straight insert sort not included
-#define PPINS 30
-//#define PPGRINS 31
-
-//another method of doing insert sort on
-//preproccessed data
-//note: again only used on preprocessed data
-#define PPSA 34
-//#define PPGRSA 35
-
-//insert to bucket list sorted
-#define PPANIS 38
-//#define PPGRANIS 39
-
-
-//quicksort on sub arrays as data is got
-//node: only on preprocessed
-#define PPQSA 42 
-//#define PPGRQSA 43
-
-
-//mergesort on sub arrays as data is got
-//node: only on preprocessed
-#define PPMSA 46
-//#define PPGRMSA 47
-
-
-//timsort on sub arrays as data is got
-//node: only on preprocessed
-#define PPTSA 50
-//#define PPGRTSA 51
-
-//sqrt on sub arrays as data is got
-//node: only on preprocessed
-//#define PPSQA 54
-//#define PPGRSQA 55
-
-
-//shell on sub arrays as data is got
-//node: only on preprocessed
-//#define PPSHA 58
-//#define PPGRSHA 59
-
-//shell on sub arrays as data is got
-//node: only on preprocessed
-/*#define SHS 60
-  #define GRSHS 61
-  #define PPSHS 62
-  #define PPGRSHS 63*/
-
-
-
-//inverts order of preprocessed table (not wise to use)
-//#define invert
-
-//just stuff for printing results
-#define printLen 45
-#define numTypes 4
-#define numFuns 16
-const char types[numTypes][32]={
-"Rand",
-  "Gen Runs" ,
-  "Rand Pre Processed",
-  "Gen Runs Pre Processes"
-  };
-
-const char funs[numFuns][32]={
-"Merge Sort[Normal]",
-  "Merge Sort[In Place]" ,
-  "Quick Sort['Sort.h']",
-  "Quick Sort['Math.h']",
-  "Tim Sort['Timsort.h']",
-  "Tim Sort['Sort.h']",
-  "Sqrt Search",
-  "Insert Sort After Get",
-  "Insert Sort as Get",
-  "LL Insert Sort as Add",
-  "Quicksort After Get",
-  "Mergesort After Get",
-  "Timsort After Get",
-  "Sqrt Sort After Get",
-  "Shell Sort After Get",
-  "Shell Sort"
-  };
-
-
-//sort.h stuff
-#define SORT_CMP(x, y) (x - y)
-#define MAX(x,y) (((x) > (y) ? (x)   : (y)))
-#define MIN(x,y) (((x) < (y) ? (x)   : (y)))
-//#define SORT_CSWAP(x, y) {SORT_TYPE _sort_swap_temp = MAX((x), (y)); (x) = MIN((x),(y)); (y) = _sort_swap_temp;}
-
-
-//node for precprocess
-typedef struct node{
-#ifdef raPtr
-  int index;
-#else
-  struct node* next;
-#endif
-  stype val;
-} node;
-
-
-//const for getting slot in table for preprocesing elements
-const double max= (double)(RAND_MAX);
 
 //arguments
 int randSeed=0;
@@ -215,666 +32,8 @@ static ArgOption args[] = {
 static ArgDefs argp = { args, "A bunch of sorting", Version, NULL };
 
 
-//prints for a given run
-void doPrint(int defNum, double tDif){
-  int total=strlen(types[defNum%numTypes]);
-  total+= strlen(funs[defNum/numTypes]);
-  printf("--------------------------------------------------------------------------\n");
-  printf("%s %s", types[defNum%numTypes], funs[defNum/numTypes]);
-  for(int i =total;i<printLen;i++){
-    printf(" ");
-  }
-  printf(": %.2lf ms\n", tDif);
-  printf("--------------------------------------------------------------------------\n");
 
-}
-
-//verifies array is sorted
-void verCorrect(stype* arr){
-  for(int i =1;i<len;i++){
-    if(arr[i]<arr[i-1]){
-      printf("Bad Sort!\n");
-      return;
-    }
-  }
-}
-
-//adds a node to table for preprocess
-void addNode(node* newNode,
-#ifdef raTablePtr
-	     int*
-#else
-	     node**
-#endif
-	     table
-#ifdef raPtr
-	     , long base
-#ifdef preBase
-	     , int ind
-#endif
-#endif
-	     ){
-#ifdef useFloat
-  unsigned int slot=(unsigned int)((newNode->val/max)*(tsize));
-#else
-  unsigned int slot=newNode->val>>(32-logsize);
-#endif
-  
-#ifdef invert
-#ifdef raPtr
-#ifdef raTablePtr
-  newNode->index=table[len-slot-1];
-#ifdef preBase
-  table[line-slot-1]=ind;
-#else
-  table[line-slot-1]=(int)(((long)newNode)-base);
-#endif
-
-#else
-  if(table[len-slot-1]){
-    newNode->index=(int)(((long)table[len-slot-1])-base);
-  }
-  else{
-    newNode->index=-1;
-  }
-  table[len-slot-1]=newNode;
-#endif
-#else
-  newNode->next=table[len-slot-1];
-  table[len-slot-1]=newNode;
-#endif
-
-#endif
-#ifndef invert
-#ifdef raPtr
-#ifdef raTablePtr
-  newNode->index=table[slot];
-#ifdef preBase
-  table[slot]=ind;
-#else
-  table[slot]=(int)(((long)newNode)-base);
-#endif
-#else
-  if(table[slot]){
-    newNode->index=(int)(((long)table[slot])-base);
-  }
-  else{
-    newNode->index=-1;
-  }
-  table[slot]=newNode;
-#endif
-#else
-  newNode->next=table[slot];
-  table[slot]=newNode;
-#endif
-
-
-#endif
-}
-
-//adds a node to table for preprocess
-void addNodeSort(node* newNode,
-#ifdef raTablePtr
-		 int*
-#else
-		 node**
-#endif
-		 table
-#ifdef raPtr
-		 , long base
-#endif
-		 ){
-  stype val=newNode->val;
-#ifdef useFloat
-  unsigned int slot=(unsigned int)((val/max)*(tsize));
-#else
-  unsigned int slot=val>>(32-logsize);
-#endif
-#ifdef raTablePtr
-  if(table[slot]==-1){
-    table[slot]=(int)((((long)newNode))-base);;
-    newNode->index=-1;
-    return;
-  }
-  node* temp=(node*)(table[slot]+base);
-  if(temp->val>val){
-    newNode->index=table[slot];
-    table[slot]=(int)(((long)newNode)-base);
-    return;
-  }
-  if(temp->index==-1){
-    temp->index=(int)((((long)newNode))-base);
-    newNode->index=-1;
-    return;
-  }
-  node* prev=temp;
-  temp=(node*)(temp->index+base);
-
-  while(temp){
-    if(val<temp->val){
-      break;
-    }
-    prev=temp;
-    if(temp->index==-1){
-      temp=NULL;
-      break;
-    }
-    else{
-      temp=(node*)(temp->index+base);
-    }
-
-  }
-  prev->index=(int)((((long)newNode))-base);
-  if(temp){
-    newNode->index=(int)((((long)temp))-base);
-  }
-  else{
-    newNode->index=-1;
-  }
-#else
-  if(!table[slot]){
-    table[slot]=newNode;
-#ifdef raPtr
-    newNode->index=-1;
-#endif
-    return;
-  }
-
-  if(table[slot]->val>val){
-#ifdef raPtr
-    newNode->index=(int)(((long)table[slot])-base);
-#else
-    newNode->next=table[slot];
-    
-#endif
-    table[slot]=newNode;
-    return;
-  }
-#ifdef raPtr
-  node* temp;
-  if(table[slot]->index==-1){
-    table[slot]->index=(int)((((long)newNode))-base);
-    newNode->index=-1;
-    return;
-  }
-  else{
-    temp=(node*)(table[slot]->index+base);
-  }
-#else
-  node* temp=table[slot]->next;
-#endif
-  node* prev=table[slot];
-  while(temp){
-    if(val<temp->val){
-      break;
-    }
-    prev=temp;
-#ifdef raPtr
-    if(temp->index==-1){
-      temp=NULL;
-      break;
-    }
-    else{
-      temp=(node*)(temp->index+base);
-    }
-#else
-    temp=temp->next;
-#endif
-  }
-#ifdef raPtr
-  prev->index=(int)((((long)newNode))-base);
-  if(temp){
-    newNode->index=(int)((((long)temp))-base);
-  }
-  else{
-    newNode->index=-1;
-  }
-#else
-  prev->next=newNode;
-  newNode->next=temp;
-#endif
-#endif
-}
-
-
-//gets all the values from table
-void getVals(
-#ifdef raTablePtr
-	     int*
-#else
-	     node**
-#endif
-	     table, stype* arr
-#ifdef raPtr
-	     , long base
-#endif
-	     ){
-  unsigned int ind=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-    while(temp){
-      arr[ind]=temp->val;
-      ind++;
-#if defined raPtr || defined raTablePtr
-      if(temp->index==-1){
-	break;
-      }
-      else{
-	temp=(node*)(temp->index+base);
-      }
-#else
-      temp=temp->next;
-#endif
-
-    }
-  }
-}
-
-//insert sort between two pointers
-static void insertion_sort_ptr(stype *low, stype *high) {
-  stype *p, *q;
-  stype a, b;
-  for (q = low + 1; q <= high; ++q) {
-    a = q[0];
-    for (p = q - 1; p >= low && (b = p[0]) > a; p--)
-      p[1] = b;
-    p[1] = a;
-  }
-}
-
-//insert sort between two pointers
-static void insertion_sort_ind(stype *arr, unsigned int n) {
-  int i, key, j;  
-  for (i = 1; i < n; i++) {  
-    key = arr[i];  
-    j = i - 1;  
-    while (j >= 0 && arr[j] > key) {  
-      arr[j + 1] = arr[j];  
-      j = j - 1;  
-    }  
-    arr[j + 1] = key;  
-  }  
-}
-
-//puts an element into subarray in sorted order as their being
-//gotten from table
-void sortAsAdd(stype* arr, int ind, stype val){
-  int i=0;
-  for(;i<ind;i++){
-    if(arr[i]>val){
-      unsigned t=arr[i];
-      arr[i]=val;
-      val=t;
-    }
-  }
-  arr[i]=val;
-}
-
-//gets values sorting as adding
-void getValsSortAsAdd(
-#ifdef raTablePtr
-		      int*
-#else
-		      node**
-#endif
-		      table, stype* arr
-#ifdef raPtr
-		      , long base
-#endif
-		      ){
-  unsigned int ind=0;
-  unsigned int indStart=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-    indStart+=ind;
-    ind=0;
-    while(temp){
-      sortAsAdd(arr+indStart, ind, temp->val);
-      ind++;
-#if defined raPtr || defined raTablePtr
-      if(temp->index!=-1){
-	temp=(node*)(temp->index+base);
-      }
-      else{
-	break;
-
-      }
-#else
-      temp=temp->next;
-#endif
-    }
-  }
-}
-
-//After getting values for a slot, insert sort it
-void getValsInsertSort(
-#ifdef raTablePtr
-		       int*
-#else
-		       node**
-#endif
-		       table, stype* arr
-#ifdef raPtr
-		       , long base
-#endif
-		       ){
-  unsigned int ind=0;
-  unsigned int indStart=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr
-
-    //thinking about redoing loops like this when using indexes instead of ptrs
-    /*    indStart=ind;
-	  temp=(node*)(table[i]+base);
-	  while((long)temp>=base){
-	  arr[ind]=temp->val;
-	  temp=(node*)(temp->index+base);
-	  ind++;
-     
-	  }*/
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-    indStart=ind;
-    while(temp){
-      arr[ind]=temp->val;
-      ind++;
-#if defined raPtr || defined raTablePtr
-      if(temp->index!=-1){
-	temp=(node*)(temp->index+base);
-      }
-      else{
-	break;
-      }
-#else
-      temp=temp->next;
-#endif
-    }
-    //  #endif
-    insertion_sort_ind(arr+indStart, ind-indStart);
-  }
-}
-
-//mergesort on gotten values
-void getValsMergeSort(
-#ifdef raTablePtr
-		      int*
-#else
-		      node**
-#endif
-		      table, stype* arr
-#ifdef raPtr
-		      , long base
-#endif
-		      ){
-  unsigned int ind=0;
-  unsigned int indStart=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr 
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-
-    //    temp=table[i];
-    indStart=ind;
-    while(temp){
-      arr[ind]=temp->val;
-      ind++;
-#if defined raPtr  || defined raTablePtr
-      if(temp->index==-1){
-	break;
-      }
-      else{
-	temp=(node*)(temp->index+base);
-      }
-#else
-      temp=temp->next;
-#endif
-    }
-    sorter_merge_sort(arr+indStart, ind-indStart);
-  }
-}
-
-//shellsort on gotten values
-void getValsShellSort(
-#ifdef raTablePtr
-		      int*
-#else
-		      node**
-#endif
-		      table, stype* arr
-#ifdef raPtr
-		      , long base
-#endif
-		      ){
-  unsigned int ind=0;
-  unsigned int indStart=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr 
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-
-    //    temp=table[i];
-    indStart=ind;
-    while(temp){
-      arr[ind]=temp->val;
-      ind++;
-#if defined raPtr  || defined raTablePtr
-      if(temp->index==-1){
-	break;
-      }
-      else{
-	temp=(node*)(temp->index+base);
-      }
-#else
-      temp=temp->next;
-#endif
-    }
-    sorter_shell_sort(arr+indStart, ind-indStart);
-  }
-}
-
-//sqrtsort on gotten values
-void getValsSqrtSort(
-#ifdef raTablePtr
-		     int*
-#else
-		     node**
-#endif
-		     table, stype* arr
-#ifdef raPtr
-		     , long base
-#endif
-		     ){
-  unsigned int ind=0;
-  unsigned int indStart=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr 
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-
-    //    temp=table[i];
-    indStart=ind;
-    while(temp){
-      arr[ind]=temp->val;
-      ind++;
-#if defined raPtr  || defined raTablePtr
-      if(temp->index==-1){
-	break;
-      }
-      else{
-	temp=(node*)(temp->index+base);
-      }
-#else
-      temp=temp->next;
-#endif
-    }
-    sorter_sqrt_sort(arr+indStart, ind-indStart);
-  }
-}
-
-
-//timsort on gotten values
-void getValsTimSort(
-#ifdef raTablePtr
-		    int*
-#else
-		    node**
-#endif
-		    table, stype* arr
-#ifdef raPtr
-		    , long base
-#endif
-		    ){
-  unsigned int ind=0;
-  unsigned int indStart=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr 
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-
-    //    temp=table[i];
-    indStart=ind;
-    while(temp){
-      arr[ind]=temp->val;
-      ind++;
-#if defined raPtr  || defined raTablePtr
-      if(temp->index==-1){
-	break;
-      }
-      else{
-	temp=(node*)(temp->index+base);
-      }
-#else
-      temp=temp->next;
-#endif
-    }
-    sorter_tim_sort(arr+indStart, ind-indStart);
-  }
-}
-
-//quicksort on gotten values
-void getValsQuickSort(
-#ifdef raTablePtr
-		      int*
-#else
-		      node**
-#endif
-		      table, stype* arr
-#ifdef raPtr
-		      , long base
-#endif
-		      ){
-  unsigned int ind=0;
-  unsigned int indStart=0;
-  node* temp;
-  for(unsigned int i =0;i<(tsize);i++){
-#ifdef raTablePtr 
-    if(table[i]!=-1){
-      temp=(node*)(table[i]+base);
-    }
-    else{
-      temp=NULL;
-    }
-#else
-    temp=table[i];
-#endif
-
-    //    temp=table[i];
-    indStart=ind;
-    while(temp){
-      arr[ind]=temp->val;
-      ind++;
-#if defined raPtr  || defined raTablePtr
-      if(temp->index==-1){
-	break;
-      }
-      else{
-	temp=(node*)(temp->index+base);
-      }
-#else
-      temp=temp->next;
-#endif
-    }
-
-    sorter_quick_sort(arr+indStart, ind-indStart);
-  }
-}
-
-
-//compare function for sort functions  
-static int intcomp(const void* a, const void* b){
-  return *(stype*)a - *(stype*)b;
-}
-
-//diff two timevals
-double getDiff(struct timeval t1, struct timeval t2){
-  double ms1=t1.tv_sec*1000 + t1.tv_usec/1000.0;
-  double ms2=t2.tv_sec*1000 + t2.tv_usec/1000.0;
-  return ms2-ms1;
-}
-
-
-#if defined PPSA || defined PPGRSA
-int testPPSA(
+int testSortAsGet(
 #ifdef raTablePtr
 	     int*
 #else
@@ -905,238 +64,47 @@ int testPPSA(
   }
   getValsSortAsAdd(table, arr
 #ifdef raPtr
-    ,base
-#endif
-    );
-}
-#endif
-#if defined PPANIS || defined PPGRANIS
-  int testPPANIS(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#endif
-  for(unsigned int i =0;i<len;i++){
-  nodes[i].val=arr[i];
-  addNodeSort(nodes+i, table
-#ifdef raPtr
-    ,base
-#endif
-    );
-}
-  getVals(table, arr
-#ifdef raPtr
-    ,base
-#endif
-    );
-}
-
-#endif
-
-#if defined PPINS || defined PPGRINS
-  int testPPINS(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  getValsInsertSort(table, arr
-#ifdef raPtr
-		    ,base
-#endif
-		    );
-}
-#endif
-
-#if defined PPQSA || defined PPGRQSA
-int testPPQSA(
-#ifdef raTablePtr
-	      int*
-#else
-	      node**
-#endif
-	      table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-    nodes[i].val=arr[i];
-    addNode(nodes+i, table
-#ifdef raPtr
-	    ,base
-#ifdef preBase
-	    ,indBase
-#endif
-#endif
-	    );
-#ifdef raPtr
-#ifdef preBase
-    indBase+=sizeof(node);
-#endif
-#endif
-  }
-  getValsQuickSort(table, arr
-#ifdef raPtr
-    ,base
-#endif
-    );
-}
-#endif
-
-#if defined PPTSA || defined PPGRTSA
-  int testPPTSA(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  getValsTimSort(table, arr
-#ifdef raPtr
-		 ,base
-#endif
-		 );
-}
-#endif
-
-#if defined PPMSA || defined PPGRMSA
-int testPPMSA(
-#ifdef raTablePtr
-	      int*
-#else
-	      node**
-#endif
-	      table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-    nodes[i].val=arr[i];
-    addNode(nodes+i, table
-#ifdef raPtr
-	    ,base
-#ifdef preBase
-	    ,indBase
-#endif
-#endif
-	    );
-#ifdef raPtr
-#ifdef preBase
-    indBase+=sizeof(node);
-#endif
-#endif
-  }
-  getValsMergeSort(table, arr
-#ifdef raPtr
-    ,base
-#endif
-    );
-}
-#endif
-
-#if defined PPSHA || defined PPGRSHA
-  int testPPSHA(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  getValsShellSort(table, arr
-#ifdef raPtr
 		   ,base
 #endif
 		   );
 }
+
+
+int testSortAsAdd(
+#ifdef raTablePtr
+	       int*
+#else
+	       node**
 #endif
+	       table, node* nodes, stype* arr){
+#ifdef raPtr
+  long base=(long)nodes;
+#endif
+  for(unsigned int i =0;i<len;i++){
+    nodes[i].val=arr[i];
+    addNodeSort(nodes+i, table
+#ifdef raPtr
+		,base
+#endif
+		);
+  }
+  getVals(table, arr
+#ifdef raPtr
+	  ,base
+#endif
+	  );
+}
 
 
-#if defined PPSQA || defined PPGRSQA
-int testPPSQA(
+
+
+int testGetWithSort(
 #ifdef raTablePtr
 	      int*
 #else
 	      node**
 #endif
-	      table, node* nodes, stype* arr){
+	      table, node* nodes, stype* arr,void (*sort_function)(stype*, const size_t)){
 #ifdef raPtr
   long base=(long)nodes;
 #ifdef preBase
@@ -1159,65 +127,23 @@ int testPPSQA(
 #endif
 #endif
   }
-  getValsSqrtSort(table, arr
+  getValsSort(table, arr,
 #ifdef raPtr
-    ,base
+	      base,
 #endif
-    );
+	      sort_function);
 }
-#endif
 
 
 
 
-
-#if defined PPNMS || defined PPGRNMS
-  int testPPNMS(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  getVals(table, arr
-#ifdef raPtr
-	  ,base
-#endif
-	  );
-  sorter_merge_sort(arr, len);
-}
-#endif
-
-#if defined PPSHS || defined PPGRSHS
-int testPPSHS(
+int testSort2AfterGet(
 #ifdef raTablePtr
 	      int*
 #else
 	      node**
 #endif
-	      table, node* nodes, stype* arr){
+	      table, node* nodes, stype* arr, void (*sort_function)(stype*, const size_t)){
 #ifdef raPtr
   long base=(long)nodes;
 #ifdef preBase
@@ -1225,6 +151,7 @@ int testPPSHS(
 #endif
 #endif
   for(unsigned int i =0;i<len;i++){
+
     nodes[i].val=arr[i];
     addNode(nodes+i, table
 #ifdef raPtr
@@ -1242,61 +169,20 @@ int testPPSHS(
   }
   getVals(table, arr
 #ifdef raPtr
-    ,base
-#endif
-    );
-  sorter_shell_sort(arr, len);
-}
-#endif
-
-#if defined PPIMS || defined PPGRIMS
-  int testPPIMS(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  getVals(table, arr
-#ifdef raPtr
 	  ,base
 #endif
 	  );
-  sorter_merge_sort_in_place(arr, len);
+  sort_function(arr, len);
 }
-#endif
 
-#if defined PPTS1 || defined PPGRTS1
-int testPPTS1(
+
+int testSort4AfterGet(
 #ifdef raTablePtr
 	      int*
 #else
 	      node**
 #endif
-	      table, node* nodes, stype* arr){
+	      table, node* nodes, stype* arr, void (*sort_function)(void*, const size_t, const size_t, int (*cmp_fun)(const void*, const void*))){
 #ifdef raPtr
   long base=(long)nodes;
 #ifdef preBase
@@ -1304,6 +190,7 @@ int testPPTS1(
 #endif
 #endif
   for(unsigned int i =0;i<len;i++){
+
     nodes[i].val=arr[i];
     addNode(nodes+i, table
 #ifdef raPtr
@@ -1321,165 +208,11 @@ int testPPTS1(
   }
   getVals(table, arr
 #ifdef raPtr
-    ,base
-#endif
-    );
-  timsort(arr, len, sizeof(stype), intcomp);  
-}
-#endif
-
-#if defined PPTS2 || defined PPGRTS2
-  int testPPTS2(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  getVals(table, arr
-#ifdef raPtr
 	  ,base
 #endif
 	  );
-  sorter_tim_sort(arr, len);
+  sort_function(arr, len, sizeof(stype), intcomp);
 }
-#endif
-
-#if defined PPMQS || defined PPGRMQS
-int testPPMQS(
-#ifdef raTablePtr
-	      int*
-#else
-	      node**
-#endif
-	      table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-    nodes[i].val=arr[i];
-    addNode(nodes+i, table
-#ifdef raPtr
-	    ,base
-#ifdef preBase
-	    ,indBase
-#endif
-#endif
-	    );
-#ifdef raPtr
-#ifdef preBase
-    indBase+=sizeof(node);
-#endif
-#endif
-  }
-  getVals(table, arr
-#ifdef raPtr
-    ,base
-#endif
-    );
-  qsort(arr, len, sizeof(stype), intcomp);  
-}
-#endif
-
-#if defined PPCQS || defined PPGRCQS
-  int testPPCQS(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  sorter_quick_sort(arr, len);
-}
-#endif
-
-#if defined PPSQ || defined PPGRSQ
-  int testPPSQ(
-#ifdef raTablePtr
-  int*
-#else
-    node**
-#endif
-    table, node* nodes, stype* arr){
-#ifdef raPtr
-  long base=(long)nodes;
-#ifdef preBase
-  long indBase=0;
-#endif
-#endif
-  for(unsigned int i =0;i<len;i++){
-  nodes[i].val=arr[i];
-  addNode(nodes+i, table
-#ifdef raPtr
-    ,base
-#ifdef preBase
-    ,indBase
-#endif
-#endif
-    );
-#ifdef raPtr
-#ifdef preBase
-  indBase+=sizeof(node);
-#endif
-#endif
-}
-  getVals(table, arr
-#ifdef raPtr
-	  ,base
-#endif
-	  );
-  sorter_sqrt_sort(arr, len);
-}
-#endif
-
 
 
 
@@ -1572,7 +305,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPTS1(tablePPTS1, nodesPPTS1, arrPPTS1);
+  testSort4AfterGet(tablePPTS1, nodesPPTS1, arrPPTS1, timsort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPTS1);
@@ -1631,7 +364,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPTS1(tablePPGRTS1, nodesPPGRTS1, arrPPGRTS1);
+  testSort4AfterGet(tablePPGRTS1, nodesPPGRTS1, arrPPGRTS1, timsort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRTS1);
@@ -1692,7 +425,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPTS2(tablePPTS2, nodesPPTS2, arrPPTS2);
+  testSort2AfterGet(tablePPTS2, nodesPPTS2, arrPPTS2, sorter_tim_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPTS2);
@@ -1751,7 +484,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPTS2(tablePPGRTS2, nodesPPGRTS2, arrPPGRTS2);
+  testSort2AfterGet(tablePPGRTS2, nodesPPGRTS2, arrPPGRTS2, sorter_tim_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRTS2);
@@ -1811,7 +544,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPMQS(tablePPMQS, nodesPPMQS, arrPPMQS);
+  testSort4AfterGet(tablePPMQS, nodesPPMQS, arrPPMQS, qsort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPMQS);
@@ -1870,7 +603,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPMQS(tablePPGRMQS, nodesPPGRMQS, arrPPGRMQS);
+  testSort4AfterGet(tablePPGRMQS, nodesPPGRMQS, arrPPGRMQS, qsort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRMQS);
@@ -1930,7 +663,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPCQS(tablePPCQS, nodesPPCQS, arrPPCQS);
+  testSort2AfterGet(tablePPCQS, nodesPPCQS, arrPPCQS, sorter_quick_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPCQS);
@@ -1989,7 +722,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPCQS(tablePPGRCQS, nodesPPGRCQS, arrPPGRCQS);
+  testSort2AfterGet(tablePPGRCQS, nodesPPGRCQS, arrPPGRCQS, sorter_quick_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRCQS);
@@ -2049,7 +782,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPNMS(tablePPNMS, nodesPPNMS, arrPPNMS);
+  testSort2AfterGet(tablePPNMS, nodesPPNMS, arrPPNMS, sorter_merge_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPNMS);
@@ -2108,7 +841,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPNMS(tablePPGRNMS, nodesPPGRNMS, arrPPGRNMS);
+  testSort2AfterGet(tablePPGRNMS, nodesPPGRNMS, arrPPGRNMS, sorter_merge_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRNMS);
@@ -2168,7 +901,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPIMS(tablePPIMS, nodesPPIMS, arrPPIMS);
+  testSort2AfterGet(tablePPIMS, nodesPPIMS, arrPPIMS, sorter_merge_sort_in_place);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPIMS);
@@ -2227,7 +960,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPIMS(tablePPGRIMS, nodesPPGRIMS, arrPPGRIMS);
+  testSort2AfterGet(tablePPGRIMS, nodesPPGRIMS, arrPPGRIMS, sorter_merge_sort_in_place);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRIMS);
@@ -2287,7 +1020,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSQ(tablePPSQ, nodesPPSQ, arrPPSQ);
+  testSort2AfterGet(tablePPSQ, nodesPPSQ, arrPPSQ, sorter_sqrt_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPSQ);
@@ -2346,7 +1079,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSQ(tablePPGRSQ, nodesPPGRSQ, arrPPGRSQ);
+  testSort2AfterGet(tablePPGRSQ, nodesPPGRSQ, arrPPGRSQ, sorter_sqrt_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRSQ);
@@ -2406,7 +1139,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSHS(tablePPSHS, nodesPPSHS, arrPPSHS);
+  testSort2AfterGet(tablePPSHS, nodesPPSHS, arrPPSHS, sorter_shell_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPSHS);
@@ -2433,7 +1166,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  timsort(arrGRSHS, len, sizeof(stype), intcomp);  
+  sorter_shell_sort(arrGRSHS, len);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrGRSHS);
@@ -2465,7 +1198,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSHS(tablePPGRSHS, nodesPPGRSHS, arrPPGRSHS);
+  testSort2AfterGet(tablePPGRSHS, nodesPPGRSHS, arrPPGRSHS, sorter_shell_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRSHS);
@@ -2499,7 +1232,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPINS(tablePPINS, nodesPPINS, arrPPINS);
+  testGetWithSort(tablePPINS, nodesPPINS, arrPPINS, insertion_sort_ind);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPINS);
@@ -2533,7 +1266,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPINS(tablePPGRINS, nodesPPGRINS, arrPPGRINS);
+  testGetWithSort(tablePPGRINS, nodesPPGRINS, arrPPGRINS, insertion_sort_ind);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRINS);
@@ -2567,7 +1300,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSA(tablePPSA, nodesPPSA, arrPPSA);
+  testSortAsGet(tablePPSA, nodesPPSA, arrPPSA);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPSA);
@@ -2601,7 +1334,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSA(tablePPGRSA, nodesPPGRSA, arrPPGRSA);
+  testSortAsGet(tablePPGRSA, nodesPPGRSA, arrPPGRSA);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRSA);
@@ -2636,7 +1369,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPANIS(tablePPANIS, nodesPPANIS, arrPPANIS);
+  testSortAsAdd(tablePPANIS, nodesPPANIS, arrPPANIS);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPANIS);
@@ -2670,7 +1403,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPANIS(tablePPGRANIS, nodesPPGRANIS, arrPPGRANIS);
+  testSortAsAdd(tablePPGRANIS, nodesPPGRANIS, arrPPGRANIS);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRANIS);
@@ -2704,7 +1437,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPQSA(tablePPQSA, nodesPPQSA, arrPPQSA);
+  testGetWithSort(tablePPQSA, nodesPPQSA, arrPPQSA, sorter_quick_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPQSA);
@@ -2738,7 +1471,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPQSA(tablePPGRQSA, nodesPPGRQSA, arrPPGRQSA);
+  testGetWithSort(tablePPGRQSA, nodesPPGRQSA, arrPPGRQSA, sorter_quick_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRQSA);
@@ -2773,7 +1506,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPMSA(tablePPMSA, nodesPPMSA, arrPPMSA);
+  testGetWithSort(tablePPMSA, nodesPPMSA, arrPPMSA, sorter_merge_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPMSA);
@@ -2807,7 +1540,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPMSA(tablePPGRMSA, nodesPPGRMSA, arrPPGRMSA);
+  testGetWithSort(tablePPGRMSA, nodesPPGRMSA, arrPPGRMSA, sorter_merge_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRMSA);
@@ -2841,7 +1574,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPTSA(tablePPTSA, nodesPPTSA, arrPPTSA);
+  testGetWithSort(tablePPTSA, nodesPPTSA, arrPPTSA, sorter_tim_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPTSA);
@@ -2875,7 +1608,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPTSA(tablePPGRTSA, nodesPPGRTSA, arrPPGRTSA);
+  testGetWithSort(tablePPGRTSA, nodesPPGRTSA, arrPPGRTSA, sorter_tim_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRTSA);
@@ -2909,7 +1642,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSQA(tablePPSQA, nodesPPSQA, arrPPSQA);
+  testGetWithSort(tablePPSQA, nodesPPSQA, arrPPSQA, sorter_sqrt_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPSQA);
@@ -2943,7 +1676,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSQA(tablePPGRSQA, nodesPPGRSQA, arrPPGRSQA);
+  testGetWithSort(tablePPGRSQA, nodesPPGRSQA, arrPPGRSQA, sorter_sqrt_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRSQA);
@@ -2977,7 +1710,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSHA(tablePPSHA, nodesPPSHA, arrPPSHA);
+  testGetWithSort(tablePPSHA, nodesPPSHA, arrPPSHA, sorter_shell_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPSHA);
@@ -3011,7 +1744,7 @@ int main(int argc, char** argv){
   qsort(verArr, len, sizeof(stype), intcomp);  
 #endif
   gettimeofday(&t[0],NULL);
-  testPPSHA(tablePPGRSHA, nodesPPGRSHA, arrPPGRSHA);
+  testGetWithSort(tablePPGRSHA, nodesPPGRSHA, arrPPGRSHA, sorter_shell_sort);
   gettimeofday(&t[1],NULL);
 #ifdef ver
   verCorrect(arrPPGRSHA);

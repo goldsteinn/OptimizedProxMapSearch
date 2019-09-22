@@ -404,16 +404,20 @@ static void *ensureCapacity(struct timsort *ts, size_t minCapacity,
 #undef WIDTH
 
 
-int TIMSORT(void *a, size_t nel, size_t width, CMPPARAMS(c, carg))
+void TIMSORT(void *a, size_t nel, size_t width, CMPPARAMS(c, carg))
 {
 	switch (width) {
 	case 4:
-		return timsort_4(a, nel, width, CMPARGS(c, carg));
+		timsort_4(a, nel, width, CMPARGS(c, carg));
+		return;
 	case 8:
-		return timsort_8(a, nel, width, CMPARGS(c, carg));
+		timsort_8(a, nel, width, CMPARGS(c, carg));
+		return;
 	case 16:
-		return timsort_16(a, nel, width, CMPARGS(c, carg));
+		timsort_16(a, nel, width, CMPARGS(c, carg));
+		return;
 	default:
-		return timsort_width(a, nel, width, CMPARGS(c, carg));
+		timsort_width(a, nel, width, CMPARGS(c, carg));
+		return;
 	}
 }
