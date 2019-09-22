@@ -19,3 +19,5 @@ https://github.com/patperry/timsort/blob/master/timsort.h
 dir sort from:
 https://github.com/swenson/sort
 
+
+Generally outperforms all other sorting algorithms in throughput. With raPtr and raTablePtr both defined does this at the cost of +8 bytes per element to be sorted.
