@@ -30,60 +30,64 @@ typedef float stype; //define data type to sort (keep it 4 bytes for now)
 //TODO better ways to sort each slot
 //Adding a queue for each table slot maybe? https://stackoverflow.com/questions/3759112/whats-faster-inserting-into-a-priority-queue-or-sorting-retrospectively
 
+//instead of each bucket being linked list store offset from base for next (faster)
 #define raPtr 1
 #ifdef raPtr
-#define raTablePtr 1
+
+//instead of storing head of table slot as pointer, store it also as offset from base (fastest)
+#define raTablePtr 1 
 //#define preBase
 #endif
 
 #define useFloat 1 //to use float division to get slot (otherwise uses lower logsize bits)
+
+//comment out the two verifications once your content that its not broken (it double testing time)
 #define superVer 1 //verifies sorted elements are exact right elements
 #define ver 1 //verifies elements were actually sorted
 
 //these #defines are the possible methods you can run (comment out and they wont run)
-
 //every set of 4 is a different sort method, i.e 0-3 uses normal mergesort
 /*#define NMS 0  //just running the sort algorithm on random data
-#define GRNMS 1 //running sort algorithm on data with alot of 'runs'
-#define PPNMS 2 //running sort sort after using my preprocessing method
-#define PPGRNMS 3 //running sort on data with alot of 'runs' that was also preprocesses
+  #define GRNMS 1 //running sort algorithm on data with alot of 'runs'
+  #define PPNMS 2 //running sort sort after using my preprocessing method
+  #define PPGRNMS 3 //running sort on data with alot of 'runs' that was also preprocesses
 
-//inplace mergesort
-#define IMS 4
-#define GRIMS 5
-#define PPIMS 6
-#define PPGRIMS 7*/
+  //inplace mergesort
+  #define IMS 4
+  #define GRIMS 5
+  #define PPIMS 6
+  #define PPGRIMS 7*/
 
 //quicksort from sort.h
 #define CQS 8
 /*#define GRCQS 9
-#define PPCQS 10
-#define PPGRCQS 11
+  #define PPCQS 10
+  #define PPGRCQS 11
 
-//quicksort from math.h
-#define MQS 12 
-#define GRMQS 13
-#define PPMQS 14
-#define PPGRMQS 15
+  //quicksort from math.h
+  #define MQS 12 
+  #define GRMQS 13
+  #define PPMQS 14
+  #define PPGRMQS 15
 
-//timsort from timsort.h (this idea for pre processing data
-//was origionally with timsort in mind)
-#define TS1 16 
-#define GRTS1 17  
-#define PPTS1 18  
-#define PPGRTS1 19
+  //timsort from timsort.h (this idea for pre processing data
+  //was origionally with timsort in mind)
+  #define TS1 16 
+  #define GRTS1 17  
+  #define PPTS1 18  
+  #define PPGRTS1 19
 
-//timsort from sort.h
-#define TS2 20 
-#define GRTS2 21  
-#define PPTS2 22  
-#define PPGRTS2 23
+  //timsort from sort.h
+  #define TS2 20 
+  #define GRTS2 21  
+  #define PPTS2 22  
+  #define PPGRTS2 23
 
-//sqrt sort from sort.h
-#define SQ 24
-#define GRSQ 25
-#define PPSQ 26
-#define PPGRSQ 27*/
+  //sqrt sort from sort.h
+  #define SQ 24
+  #define GRSQ 25
+  #define PPSQ 26
+  #define PPGRSQ 27*/
 
 //insert sort on each slot of preproccessed data
 //note: straight insert sort not included
@@ -121,24 +125,24 @@ typedef float stype; //define data type to sort (keep it 4 bytes for now)
 //sqrt on sub arrays as data is got
 //node: only on preprocessed
 /*#define PPSQA 54
-#define PPGRSQA 55
+  #define PPGRSQA 55
 
 
-//shell on sub arrays as data is got
-//node: only on preprocessed
-#define PPSHA 58
-#define PPGRSHA 59
+  //shell on sub arrays as data is got
+  //node: only on preprocessed
+  #define PPSHA 58
+  #define PPGRSHA 59
 
-//shell on sub arrays as data is got
-//node: only on preprocessed
-#define SHS 60
-#define GRSHS 61
-#define PPSHS 62
-#define PPGRSHS 63*/
+  //shell on sub arrays as data is got
+  //node: only on preprocessed
+  #define SHS 60
+  #define GRSHS 61
+  #define PPSHS 62
+  #define PPGRSHS 63*/
 
 
 
-//inverts order of preprocessed table (not wise to use)
+//inverts order of preprocessed table (not wise to use/will break many of the sortAsGet tests)
 //#define invert
 
 //just stuff for printing results
@@ -146,14 +150,14 @@ typedef float stype; //define data type to sort (keep it 4 bytes for now)
 #define numTypes 4
 #define numFuns 16
 const char types[numTypes][32]={
-  "Rand",
+"Rand",
   "Gen Runs" ,
   "Rand Pre Processed",
   "Gen Runs Pre Processes"
-};
+  };
 
 const char funs[numFuns][32]={
-  "Merge Sort[Normal]",
+"Merge Sort[Normal]",
   "Merge Sort[In Place]" ,
   "Quick Sort['Sort.h']",
   "Quick Sort['Math.h']",
@@ -169,16 +173,16 @@ const char funs[numFuns][32]={
   "Sqrt Sort After Get",
   "Shell Sort After Get",
   "Shell Sort"
-};
+  };
 
 //node for precprocess
 typedef struct node{
 #ifdef raPtr
-  int index;
+int index;
 #else
-  struct node* next;
+struct node* next;
 #endif
-  stype val;
+stype val;
 } node;
 
 
@@ -188,43 +192,43 @@ const double max= (stype)(RAND_MAX)+1.1;
 
 //prints for a given run
 void doPrint(int defNum, double tDif){
-  int total=strlen(types[defNum%numTypes]);
-  total+= strlen(funs[defNum/numTypes]);
-  printf("--------------------------------------------------------------------------\n");
-  printf("%s %s", types[defNum%numTypes], funs[defNum/numTypes]);
-  for(int i =total;i<printLen;i++){
-    printf(" ");
-  }
-  printf(": %.2lf ms\n", tDif);
-  printf("--------------------------------------------------------------------------\n");
+int total=strlen(types[defNum%numTypes]);
+total+= strlen(funs[defNum/numTypes]);
+printf("--------------------------------------------------------------------------\n");
+printf("%s %s", types[defNum%numTypes], funs[defNum/numTypes]);
+for(int i =total;i<printLen;i++){
+printf(" ");
+}
+printf(": %.2lf ms\n", tDif);
+printf("--------------------------------------------------------------------------\n");
 
 }
 
 //verifies array is sorted
 void verCorrect(stype* arr){
-  for(int i =1;i<len;i++){
-    if(arr[i]<arr[i-1]){
-      printf("Bad Sort!\n");
-      return;
-    }
-  }
+for(int i =1;i<len;i++){
+if(arr[i]<arr[i-1]){
+printf("Bad Sort!\n");
+return;
+}
+}
 }
 
 //adds a node to table for preprocess
 void addNode(node* newNode,
 #ifdef raTablePtr
-	     int*
+	       int*
 #else
-	     node**
+	       node**
 #endif
-	     table
+	       table
 #ifdef raPtr
-	     , long base
+	       , long base
 #ifdef preBase
-	     , int ind
+	       , int ind
 #endif
 #endif
-	     ){
+	       ){
 #ifdef useFloat
   unsigned int slot=(unsigned int)((newNode->val/max)*(tsize));
 #else

@@ -35,11 +35,11 @@ static ArgDefs argp = { args, "A bunch of sorting", Version, NULL };
 
 int testSortAsGet(
 #ifdef raTablePtr
-	     int*
+		  int*
 #else
-	     node**
+		  node**
 #endif
-	     table, node* nodes, stype* arr){
+		  table, node* nodes, stype* arr){
 #ifdef raPtr
   long base=(long)nodes;
 #ifdef preBase
@@ -72,11 +72,11 @@ int testSortAsGet(
 
 int testSortAsAdd(
 #ifdef raTablePtr
-	       int*
+		  int*
 #else
-	       node**
+		  node**
 #endif
-	       table, node* nodes, stype* arr){
+		  table, node* nodes, stype* arr){
 #ifdef raPtr
   long base=(long)nodes;
 #endif
@@ -100,11 +100,11 @@ int testSortAsAdd(
 
 int testGetWithSort(
 #ifdef raTablePtr
-	      int*
+		    int*
 #else
-	      node**
+		    node**
 #endif
-	      table, node* nodes, stype* arr,void (*sort_function)(stype*, const size_t)){
+		    table, node* nodes, stype* arr,void (*sort_function)(stype*, const size_t)){
 #ifdef raPtr
   long base=(long)nodes;
 #ifdef preBase
@@ -139,11 +139,11 @@ int testGetWithSort(
 
 int testSort2AfterGet(
 #ifdef raTablePtr
-	      int*
+		      int*
 #else
-	      node**
+		      node**
 #endif
-	      table, node* nodes, stype* arr, void (*sort_function)(stype*, const size_t)){
+		      table, node* nodes, stype* arr, void (*sort_function)(stype*, const size_t)){
 #ifdef raPtr
   long base=(long)nodes;
 #ifdef preBase
@@ -178,11 +178,11 @@ int testSort2AfterGet(
 
 int testSort4AfterGet(
 #ifdef raTablePtr
-	      int*
+		      int*
 #else
-	      node**
+		      node**
 #endif
-	      table, node* nodes, stype* arr, void (*sort_function)(void*, const size_t, const size_t, int (*cmp_fun)(const void*, const void*))){
+		      table, node* nodes, stype* arr, void (*sort_function)(void*, const size_t, const size_t, int (*cmp_fun)(const void*, const void*))){
 #ifdef raPtr
   long base=(long)nodes;
 #ifdef preBase
