@@ -172,7 +172,8 @@ int testSort2AfterGet(
 	  ,base
 #endif
 	  );
-  sort_function(arr, len);
+
+    sort_function(arr, len);
 }
 
 
@@ -231,21 +232,17 @@ int testAddGet(int* table,stype* arr){
     prev = table[i];
   }
   //
-  //  stype* arr2=(stype*)(table+tsize);
+  stype* arr2=(stype*)(table+tsize);
   int val=arr[0], loc, temp;
   int hits=0;
-     for (i = 1; i<len; i++){
-	 slot=( int)((val/max)*(tsize));
+     for (i = 0; i<len; i++){
+	 slot=( int)((arr[i]/max)*(tsize));
 	 loc=table[slot]++;
-	 if(loc/64==i/64){
-	   hits++;
-	 }
-	 temp=arr[loc];
-	 arr[loc]=val;
-	 val=temp;
+	 arr2[loc]=arr[loc];
+	 //	 arr[loc]=val;
+	 //	 val=temp;
      }
      //     sorter_tim_sort(arr, len);
-      printf("Hits: %d\n", hits);
 }
 
 

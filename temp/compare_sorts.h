@@ -38,7 +38,7 @@ typedef int stype; //define data type to sort (keep it 4 bytes for now)
 //#define preBase
 #endif
 
-#define useFloat 1 //to use float division to get slot (otherwise uses lower logsize bits)
+#define useFloat 1 //to use float division to  slot (otherwise uses lower logsize bits)
 
 //comment out the two verifications once your content that its not broken (it double testing time)
 //#define superVer 1 //verifies sorted elements are exact right elements
@@ -54,11 +54,11 @@ typedef int stype; //define data type to sort (keep it 4 bytes for now)
   //inplace mergesort
 //  #define IMS 4
 //  #define GRIMS 5
-  #define PPIMS 6
+//  #define PPIMS 6
 //  #define PPGRIMS 7
 
 //quicksort from sort.h
-#define CQS 8
+//#define CQS 8
 /*#define GRCQS 9
   #define PPCQS 10
   #define PPGRCQS 11
@@ -66,7 +66,7 @@ typedef int stype; //define data type to sort (keep it 4 bytes for now)
   //quicksort from math.h
   #define TEST 12 
   #define GRTEST 13*/
-  #define PPTEST 14
+//  #define PPTEST 14
 /*  #define PPGRTEST 15
 
   //timsort from timsort.h (this idea for pre processing data
@@ -79,7 +79,7 @@ typedef int stype; //define data type to sort (keep it 4 bytes for now)
   //timsort from sort.h
 //  #define TS2 20 
 //  #define GRTS2 21  
-  #define PPTS2 22  
+#define PPTS2 22  
 //  #define PPGRTS2 23
 
   //sqrt sort from sort.h
@@ -90,13 +90,13 @@ typedef int stype; //define data type to sort (keep it 4 bytes for now)
 
 //insert sort on each slot of preproccessed data
 //note: straight insert sort not included
-#define PPINS 30
+//#define PPINS 30
 //#define PPGRINS 31
 
 //another method of doing insert sort on
 //preproccessed data
 //note: again only used on preprocessed data
-#define PPSA 34
+//#define PPSA 34
 //#define PPGRSA 35
 
 //insert to bucket list sorted
@@ -112,7 +112,7 @@ typedef int stype; //define data type to sort (keep it 4 bytes for now)
 
 //mergesort on sub arrays as data is got
 //node: only on preprocessed
-#define PPMSA 46
+//#define PPMSA 46
 //#define PPGRMSA 47
 
 

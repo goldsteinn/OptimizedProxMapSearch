@@ -4,14 +4,17 @@ LDLIBS = -lm
 
 all: compare_sorts prepsort
 
-prepsort: prepsort.o utils/arg.o
+
+timsort/timsort.o: timsort/timsort.c timsort/timsort.h
+
+prepsort: prepsort.o timsort/timsort.o utils/arg.o
 
 compare_sorts: compare_sorts.o timsort/timsort.o utils/arg.o
 
 compare_sorts.o: compare_sorts.c compare_sorts.h timsort/timsort.h sort/sort.h utils/arg.h
-prepsort.o: prepsort.c prepsort.h sort/sort.h utils/arg.h
+prepsort.o: prepsort.c prepsort.h timsort/timsort.h sort/sort.h utils/arg.h
 
-timsort/timsort.o: timsort/timsort.c timsort/timsort.h
+
 
 utils/arg.o: utils/arg.c utils/arg.h
 
