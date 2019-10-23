@@ -8,12 +8,12 @@
 
 //util stuff
 #define printLen 24
-#define numTypes 1
-#define numFuns 8
+#define numTypes 6
+#define numFuns 2
 
 
 	      
-void doPrint(int defNum, double tDif);
+void doPrint(int funNum, int typeNum, double tDif);
 double getDiff(struct timeval t1, struct timeval t2);
 
 #endif

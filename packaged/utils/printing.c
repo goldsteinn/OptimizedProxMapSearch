@@ -1,26 +1,25 @@
 #include "printing.h"
 
 const char p_type[numTypes][32]={
-  ""
+  "long",
+  "int",
+  "short",
+  "char",
+  "string",
+  "generic"
 };
 
 const char p_fun[numFuns][32]={
-  "Prep Timsort['int']",
-  "Prep Timsort['str']",
-  "qsort['int']",
-  "qsort['long']",
-  "qsort['str']",
-  "Prep Int['int']",
-  "Prep Long['int']",
-  "Prep Timsort['long']"
+  "Prep Timsort",
+  "Quick Sort"
 };
 
 
-void doPrint(int defNum, double tDif){
-  int total=strlen(p_type[defNum%numTypes]);
-  total+= strlen(p_fun[defNum/numTypes]);
+void doPrint(int funNum, int typeNum, double tDif){
+  int total=strlen(p_type[typeNum]);
+  total+= strlen(p_fun[funNum]);
   printf("--------------------------------------------------------------------------\n");
-  printf("%s %s", p_type[defNum%numTypes], p_fun[defNum/numTypes]);
+  printf("%s %s", p_type[typeNum], p_fun[funNum]);
   for(int i =total;i<printLen;i++){
     printf(" ");
   }

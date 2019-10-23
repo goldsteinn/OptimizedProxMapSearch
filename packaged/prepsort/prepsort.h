@@ -6,11 +6,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+#define MAX(x,y) (((x) > (y) ? (x)   : (y)))
+#define MIN(x,y) (((x) < (y) ? (x)   : (y)))
+
 //if you want to add a special case add function pointer to union
 typedef union sort_funs{
-  void (*sort_fun_0)(void*, const size_t, const size_t,int (*compar_fun)(const void*, const void*));
-  void (*sort_fun_1)(int*, const size_t);
-  void (*sort_fun_2)(long*, const size_t);
+  void (*sort_fun_generic)(void*, const size_t, const size_t,int (*compar_fun)(const void*, const void*));
+  void (*sort_fun_long)(long*, const size_t);
+  void (*sort_fun_int)(int*, const size_t);
+  void (*sort_fun_short)(short*, const size_t);
+  void (*sort_fun_char)(char*, const size_t);
+
 }sort_funs;
 
 
