@@ -9,7 +9,7 @@
 //util stuff
 #define printLen 24
 #define numTypes 1
-#define numFuns 6
+#define numFuns 8
 
 
 	      

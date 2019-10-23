@@ -8,9 +8,11 @@ const char p_fun[numFuns][32]={
   "Prep Timsort['int']",
   "Prep Timsort['str']",
   "qsort['int']",
+  "qsort['long']",
   "qsort['str']",
-  "Prep Merge Sort['int']",
-  "Prep Heap Sort['int']"
+  "Prep Int['int']",
+  "Prep Long['int']",
+  "Prep Timsort['long']"
 };
 
 
