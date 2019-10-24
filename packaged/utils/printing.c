@@ -11,6 +11,8 @@ const char p_type[numTypes][32]={
 
 const char p_fun[numFuns][32]={
   "Prep Timsort",
+  "Prep Mergesort",
+  "Prep Quicksort",
   "Quick Sort"
 };
 

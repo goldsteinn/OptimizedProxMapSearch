@@ -12,13 +12,25 @@
 #include "utils/arg.h"
 
 
-
+#define nfuns 3
+#define toRun(f,i, x,y,z,f1, f2, f3){		\
+    if(i+1==x){					\
+      f.sort_fun_generic=f1;			\
+    }						\
+    if(i+1==y){					\
+      f.sort_fun_generic=f2;	\
+    }						\
+    if(i+1==z){					\
+      f.sort_fun_generic=f3;	\
+    }						\
+  }
 //arg processing
 #define Version "0.1"
 size_t alen=20;
 size_t slen=32;
 int rseed=0;
-int doChar, doShort, doInt, doLong, doStr, doAll;
+int doChar=0, doShort=0, doInt=0, doLong=0, doStr=0, doAll=0;
+int doQS=0, doMS=0, doTS=0, doAS=0;
 
 static ArgOption args[] = {
   // Kind, 	  Method,		name,	    reqd,  variable,		help
@@ -32,6 +44,10 @@ static ArgOption args[] = {
   { KindOption,   Set,          "--long",           0,     &doLong,            "do long sort test" },
   { KindOption,   Set,          "--str",            0,     &doStr,             "do str sort test" },
   { KindOption,   Set,          "--all",            0,     &doAll,             "do all sort tests" },
+  { KindOption,   Set,          "--qs",             0,     &doQS,              "do prep then quicksort" },
+  { KindOption,   Set,          "--ms",             0,     &doMS,              "do prep then mergesort" },
+  { KindOption,   Set,          "--ts",             0,     &doTS,              "do prep then timsort" },
+  { KindOption,   Set,          "--as",             0,     &doAS,              "do all sorts" },
   
   { KindEnd }
 };
@@ -112,6 +128,35 @@ int longCompare(const void* a, const void* b){
 int strCompare(const void*a, const void* b){
   return strcmp((char*)a, (char*)b);
 }
+
+
+void quicksort_char(void* arr, const size_t len, const size_t itemSize,
+		    int (*compar)(const void*, const void*)){
+  sorter_ch_quick_sort(arr, len);
+}
+
+void quicksort_short(void* arr, const size_t len, const size_t itemSize,
+		     int (*compar)(const void*, const void*)){
+  sorter_sh_quick_sort(arr, len);
+}
+
+void quicksort_int(void* arr, const size_t len, const size_t itemSize,
+		   int (*compar)(const void*, const void*)){
+  sorter_int_quick_sort(arr, len);
+}
+
+void quicksort_long(void* arr, const size_t len, const size_t itemSize,
+		    int (*compar)(const void*, const void*)){
+  sorter_ul_quick_sort(arr, len);
+}
+
+void quicksort_generic(void* arr, const size_t len, const size_t itemSize,
+		       int (*compar)(const void*, const void*)){
+  qsort(arr, len, itemSize, compar);  
+}
+
+
+
 void timsort_char(void* arr, const size_t len, const size_t itemSize,
 		  int (*compar)(const void*, const void*)){
   sorter_ch_tim_sort(arr, len);
@@ -135,6 +180,27 @@ void timsort_long(void* arr, const size_t len, const size_t itemSize,
 void timsort_generic(void* arr, const size_t len, const size_t itemSize,
 		     int (*compar)(const void*, const void*)){
   timsort(arr, len, itemSize, compar);  
+}
+
+
+void mergesort_char(void* arr, const size_t len, const size_t itemSize,
+		    int (*compar)(const void*, const void*)){
+  sorter_ch_merge_sort_in_place(arr, len);
+}
+
+void mergesort_short(void* arr, const size_t len, const size_t itemSize,
+		     int (*compar)(const void*, const void*)){
+  sorter_sh_merge_sort_in_place(arr, len);
+}
+
+void mergesort_int(void* arr, const size_t len, const size_t itemSize,
+		   int (*compar)(const void*, const void*)){
+  sorter_int_merge_sort_in_place(arr, len);
+}
+
+void mergesort_long(void* arr, const size_t len, const size_t itemSize,
+		    int (*compar)(const void*, const void*)){
+  sorter_ul_merge_sort_in_place(arr, len);
 }
 
 
@@ -185,21 +251,26 @@ void charTest(){
 
   sort_funs f;
   struct timeval t1, t2;
+  for(int i=0;i<nfuns;i++){
+    f.sort_fun_generic=NULL;
+    toRun(f, i, doTS, doMS, doQS, timsort_char, mergesort_char, quicksort_char);
+    if(!f.sort_fun_generic){
+      continue;
+    }
+    memcpy(toSort, arr, sizeof(char)*alen);
+    gettimeofday(&t1, NULL);
+    prepSort(toSort, alen, sizeof(char), 1,
+	     (const void*)(&cMax),(const void*)(&cMin),
+	     charVal, charCompare, f);
+    gettimeofday(&t2, NULL);
+    doPrint(i,3, getDiff(t1, t2));
+  }
   
-  f.sort_fun_generic=timsort_char;
-  memcpy(toSort, arr, sizeof(char)*alen);
-  gettimeofday(&t1, NULL);
-  prepSort(toSort, alen, sizeof(char), 1,
-	   (const void*)(&cMax),(const void*)(&cMin),
-	   charVal, charCompare, f);
-  gettimeofday(&t2, NULL);
-  doPrint(0,3, getDiff(t1, t2));
-
   memcpy(toSort, arr, sizeof(char)*alen);
   gettimeofday(&t1, NULL);
   sorter_ch_quick_sort(toSort, alen);
   gettimeofday(&t2, NULL);
-  doPrint(1,3, getDiff(t1, t2));
+  doPrint(3,3, getDiff(t1, t2));
 
   free(toSort);
   free(arr);
@@ -215,21 +286,26 @@ void shortTest(){
 
   sort_funs f;
   struct timeval t1, t2;
+  for(int i=0;i<nfuns;i++){
+    f.sort_fun_generic=NULL;
+    toRun(f,i, doTS, doMS, doQS, timsort_short, mergesort_short, quicksort_short);
+    if(!f.sort_fun_generic){
+      continue;
+    }
+    memcpy(toSort, arr, sizeof(short)*alen);
+    gettimeofday(&t1, NULL);
+    prepSort(toSort, alen, sizeof(short), 1,
+	     (const void*)(&sMax),(const void*)(&sMin),
+	     shortVal, shortCompare, f);
+    gettimeofday(&t2, NULL);
+    doPrint(i,2, getDiff(t1, t2));
+  }
   
-  f.sort_fun_generic=timsort_short;
-  memcpy(toSort, arr, sizeof(short)*alen);
-  gettimeofday(&t1, NULL);
-  prepSort(toSort, alen, sizeof(short), 1,
-	   (const void*)(&sMax),(const void*)(&sMin),
-	   shortVal, shortCompare, f);
-  gettimeofday(&t2, NULL);
-  doPrint(0,2, getDiff(t1, t2));
-
   memcpy(toSort, arr, sizeof(short)*alen);
   gettimeofday(&t1, NULL);
   sorter_sh_quick_sort(toSort, alen);
   gettimeofday(&t2, NULL);
-  doPrint(1,2, getDiff(t1, t2));
+  doPrint(3,2, getDiff(t1, t2));
 
   
   free(toSort);
@@ -247,21 +323,26 @@ void intTest(){
 
   sort_funs f;
   struct timeval t1, t2;
+  for(int i=0;i<nfuns;i++){
+    f.sort_fun_generic=NULL;
+    toRun(f, i,doTS, doMS, doQS, timsort_int, mergesort_int, quicksort_int);
+    if(!f.sort_fun_generic){
+      continue;
+    }
+    memcpy(toSort, arr, sizeof(int)*alen);
+    gettimeofday(&t1, NULL);
+    prepSort(toSort, alen, sizeof(int), 1,
+	     (const void*)(&iMax),(const void*)(&iMin),
+	     intVal, intCompare, f);
+    gettimeofday(&t2, NULL);
+    doPrint(i,1, getDiff(t1, t2));
+  }
   
-  f.sort_fun_generic=timsort_int;
-  memcpy(toSort, arr, sizeof(int)*alen);
-  gettimeofday(&t1, NULL);
-  prepSort(toSort, alen, sizeof(int), 1,
-	   (const void*)(&iMax),(const void*)(&iMin),
-	   intVal, intCompare, f);
-  gettimeofday(&t2, NULL);
-  doPrint(0,1, getDiff(t1, t2));
-
   memcpy(toSort, arr, sizeof(int)*alen);
   gettimeofday(&t1, NULL);
   sorter_int_quick_sort(toSort, alen);
   gettimeofday(&t2, NULL);
-  doPrint(1,1, getDiff(t1, t2));
+  doPrint(3,1, getDiff(t1, t2));
   free(toSort);
   free(arr);
 
@@ -278,21 +359,26 @@ void longTest(){
 
   sort_funs f;
   struct timeval t1, t2;
+  for(int i=0;i<nfuns;i++){
+    f.sort_fun_generic=NULL;
+    toRun(f, i, doTS, doMS, doQS, timsort_long, mergesort_long, quicksort_long);
+    if(!f.sort_fun_generic){
+      continue;
+    }
+    memcpy(toSort, arr, sizeof(long)*alen);
+    gettimeofday(&t1, NULL);
+    prepSort(toSort, alen, sizeof(long), 1,
+	     (const void*)(&lMax),(const void*)(&lMin),
+	     longVal, longCompare, f);
+    gettimeofday(&t2, NULL);
+    doPrint(i,0, getDiff(t1, t2));
+  }
   
-  f.sort_fun_generic=timsort_long;
-  memcpy(toSort, arr, sizeof(long)*alen);
-  gettimeofday(&t1, NULL);
-  prepSort(toSort, alen, sizeof(long), 1,
-	   (const void*)(&lMax),(const void*)(&lMin),
-	   longVal, longCompare, f);
-  gettimeofday(&t2, NULL);
-  doPrint(0,0, getDiff(t1, t2));
-
   memcpy(toSort, arr, sizeof(long)*alen);
   gettimeofday(&t1, NULL);
   sorter_ul_quick_sort(toSort, alen);
   gettimeofday(&t2, NULL);
-  doPrint(1,0, getDiff(t1, t2));
+  doPrint(3,0, getDiff(t1, t2));
   free(toSort);
   free(arr);
 
@@ -316,22 +402,29 @@ void strTest(){
 
   sort_funs f;
   struct timeval t1, t2;
+  doMS=0;
+  for(int i=0;i<nfuns;i++){
+    f.sort_fun_generic=NULL;
+    toRun(f, i, doTS, doMS, doQS, timsort_generic, NULL, quicksort_generic);
+    if(!f.sort_fun_generic){
+      continue;
+    }
+    memcpy(toSort, arr, slen*alen);
+    gettimeofday(&t1, NULL);
+    prepSort(toSort, alen, slen,0,
+	     (const void*)(&strMax),(const void*)(&strMin),
+	     strVal, strCompare, f);
+    gettimeofday(&t2, NULL);
+    doPrint(i,4, getDiff(t1, t2));
+  }
 
-  f.sort_fun_generic=timsort_generic;
-  memcpy(toSort, arr, slen*alen);
-  gettimeofday(&t1, NULL);
-  prepSort(toSort, alen, slen,0,
-	   (const void*)(&strMax),(const void*)(&strMin),
-	   strVal, strCompare, f);
-  gettimeofday(&t2, NULL);
-  doPrint(0,4, getDiff(t1, t2));
 
 
   memcpy(toSort, arr, slen*alen);
   gettimeofday(&t1, NULL);
   qsort(toSort, alen, slen, strCompare);  
   gettimeofday(&t2, NULL);
-  doPrint(1,4, getDiff(t1, t2));
+  doPrint(3,4, getDiff(t1, t2));
   free(toSort);
   free(arr);
 }
@@ -341,6 +434,13 @@ int main(int argc, char** argv){
   if(parseArguments(ap, argc, argv)){
     printf("Error parsing arguments!\n");
     return -1;
+  }
+  doMS=doMS*2;
+  doQS=doQS*3;
+  if(doAS){
+    doMS=2;
+    doQS=3;
+    doTS=1;
   }
   alen=1<<alen;
   srand(rseed);

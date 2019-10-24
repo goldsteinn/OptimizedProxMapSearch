@@ -8,15 +8,15 @@ typedef struct node{
   char val[];
 }node;
     
-typedef struct node_int{
-  int index;
-  int val;
-}node_int;
-
 typedef struct node_long{
   int index;
   long val;
 }node_long;
+
+typedef struct node_int{
+  int index;
+  int val;
+}node_int;
 
 typedef struct node_short{
   int index;
@@ -123,12 +123,27 @@ void prepSort(void* arr, const size_t len, const size_t itemSize, int ordered,
 
 
 
+inline void sortAsAdd(long* arr, int ind, long val){
+  int i=0;
+  for(;i<ind;i++){
+    if(arr[i]>val){
+      unsigned t=arr[i];
+      arr[i]=val;
+      val=t;
+    }
+  }
+  arr[i]=val;
+}
+
+
 
 void getVals_long(long* arr,int* table, const long base, const size_t len){
-  int arrInd=0;
+  int arrInd=0, lstart;
   node_long* temp=NULL;
+
   for(int i=0;i<len;i++){
     if(table[i]){
+      lstart=arrInd;
       temp=(node_long*)(table[i]*sizeof(node_long)+base);
       while(temp->index){
 	arr[arrInd]=temp->val;
@@ -140,6 +155,8 @@ void getVals_long(long* arr,int* table, const long base, const size_t len){
     }
   }
 }
+
+
 void prepSort_long(long* arr, const size_t len, const void* max,const void* min, sort_funs f){
   const unsigned long ulMin=(*(unsigned long*)min);
   unsigned long dif=(*(unsigned long*)max)-ulMin;
