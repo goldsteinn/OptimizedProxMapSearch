@@ -206,11 +206,11 @@ void mergesort_long(void* arr, const size_t len, const size_t itemSize,
 
 
 unsigned long strVal(const void* str, const size_t itemSize){
-  if(itemSize>=8){
-    unsigned long val=swapUL(*(unsigned long*)str);
+    if(itemSize>=8){
+  unsigned long val=swapUL((*(unsigned long*)str));
     return val;
-  }
-  else if(itemSize<8&&itemSize>=4){
+      }
+    else if(itemSize<8&&itemSize>=4){
     unsigned long val=swapUI((*(unsigned long*)str)&0xffffffff);
     return val;
   }
@@ -220,7 +220,7 @@ unsigned long strVal(const void* str, const size_t itemSize){
   }
   else{
     return (*(unsigned long*)str)&0xff;
-  }
+    }
 }
 
 
@@ -338,11 +338,14 @@ void intTest(){
     doPrint(i,1, getDiff(t1, t2));
   }
   
-  memcpy(toSort, arr, sizeof(int)*alen);
+  //  memcpy(toSort, arr, sizeof(int)*alen);
   gettimeofday(&t1, NULL);
-  sorter_int_quick_sort(toSort, alen);
+  sorter_int_quick_sort(arr, alen);
   gettimeofday(&t2, NULL);
   doPrint(3,1, getDiff(t1, t2));
+  for(int i=0;i<alen;i++){
+    assert(toSort[i] == arr[i]);
+  }
   free(toSort);
   free(arr);
 
@@ -351,12 +354,15 @@ void longTest(){
   long* arr=malloc(alen*sizeof(long)), *toSort=malloc(alen*sizeof(long));
   for(int i =0;i<alen;i++){
     arr[i]=rand();
-    arr[i]*=rand();
+    arr[i]=(arr[i]<<32)|rand();
+    if(rand()%2){
+      arr[i]|=1<<31;
+    }
   }
   unsigned long lMax=RAND_MAX;
-  lMax*=RAND_MAX;
+  lMax = (lMax << 32) | RAND_MAX;
+  lMax|=(1<<31);
   unsigned long lMin=0;
-
   sort_funs f;
   struct timeval t1, t2;
   for(int i=0;i<nfuns;i++){
