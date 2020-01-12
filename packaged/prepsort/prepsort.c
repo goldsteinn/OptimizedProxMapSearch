@@ -1,5 +1,4 @@
 #include "prepsort.h"
-//#define floatOp
 
 #define getItem(x, y, z) (x+(y*z))
 
@@ -25,12 +24,6 @@ typedef struct node_4{
 }node_4;
 
 
-typedef struct node_4_f{
-  int index;
-  float val;
-}node_4_f;
-
-
 typedef struct node_2{
   int index;
   short val;
@@ -44,10 +37,8 @@ typedef struct node_1{
 
 void prepSort_1(char* arr, const size_t len, const void* max,const void* min, sort_funs f);
 void prepSort_2(short* arr, const size_t len, const void* max,const void* min, sort_funs f);
-void prepSort_4_f(float* arr, const size_t len, const void* max,const void* min, sort_funs f);
-void prepSort_4_i(int* arr, const size_t len, const void* max,const void* min, sort_funs f);
-void prepSort_8_l(long* arr, const size_t len, const void* max,const void* min, sort_funs f);
-void prepSort_8_f(double* arr, const size_t len, const void* max,const void* min, sort_funs f);
+void prepSort_4(int* arr, const size_t len, const void* max,const void* min, sort_funs f);
+void prepSort_8(long* arr, const size_t len, const void* max,const void* min, sort_funs f);
 
 
 inline int getSlot(unsigned long val, const double max, const size_t len){
@@ -101,19 +92,10 @@ void prepSort(void* arr, const size_t len, const size_t itemSize, int ordered,
 	      int (*compar_fun)(const void*, const void*),sort_funs f){
   if(ordered){
     switch(itemSize){
-#ifdef floatOp
     case 8:
-      return prepSort_8_f((double*)arr, len, max,min, f);
+      return prepSort_8((long*)arr, len, max,min, f);
     case 4:
-      return prepSort_4_f((float*)arr, len, max,min, f);
-#else
-    case 8:
-
-      return prepSort_8_l((long*)arr, len, max,min, f);
-
-    case 4:
-      return prepSort_4_i((int*)arr, len, max,min, f);
-#endif
+      return prepSort_4((int*)arr, len, max,min, f);
     case 2:
       return prepSort_2((short*)arr, len, max,min, f);
     case 1:
@@ -123,15 +105,14 @@ void prepSort(void* arr, const size_t len, const size_t itemSize, int ordered,
 
 
   const unsigned long ulMin=(*(unsigned long*)min);
-  const unsigned long dif=(*(unsigned long*)max)-ulMin;
-  const size_t effectiveLen=MIN(dif, len);
+  const double rMax=((*(unsigned long*)max)-ulMin)+1.1;
+  const size_t effectiveLen=MIN(((*(unsigned long*)max)-ulMin), len);
   int* table=calloc(effectiveLen,sizeof(int));
   const int nodeSize=itemSize+sizeof(int);
   void* nodes=malloc(len*nodeSize);
   const long base=((long)nodes)-nodeSize;
   unsigned int slot;
   node* temp;
-  const double rMax=dif+1.1;
   for(int i =0;i<len;i++){
     slot=getSlot(val_fun(getItem(arr, i, itemSize), itemSize)-ulMin, rMax, effectiveLen);
     temp=(node*)(nodes+i*nodeSize);
@@ -180,67 +161,66 @@ void getVals_8(long* arr,int* table, const long base, const size_t len){
 }
 
 
-void prepSort_8_l(long* arr, const size_t len, const void* max,const void* min, sort_funs f){
+void prepSort_8(long* arr, const size_t len, const void* max,const void* min, sort_funs f){
   const unsigned long ulMin=(*(unsigned long*)min);
-  unsigned long dif=(*(unsigned long*)max)-ulMin;
-  if(dif<=len){
-    dif++;
-    //assumed < 2^31 items always
-    int* buckets=calloc(dif, sizeof(int));
-    for(int i=0;i<len;i++){
-      buckets[arr[i]]++;
-    }
-    int arrIndex=0;
-    for(int i=0;i<dif;i++){
-      for(int j=0;j<buckets[i];j++){
-	arr[arrIndex]=i;
-	arrIndex++;
-      }
-    }
-    free(buckets);
-    return;
-  }
+  const double rMax=((*(unsigned long*)max)-ulMin)+1.1;
+
   int* table=calloc(len,sizeof(int));
   void* nodes=malloc(len*sizeof(node_8));
   const long base=((long)nodes)-sizeof(node_8);
-  unsigned int slot;
+  unsigned int slot0, slot1, slot2, slot3;
   node_8* temp;
-  const double rMax=dif+1.1;
-  for(int i =0;i<len;i++){
-    slot=(arr[i]/rMax)*len;
+  int i;
+  slot0=(arr[0]/rMax)*len;
+  __builtin_prefetch(&table[slot0]);
+  slot1=(arr[1]/rMax)*len;
+  slot2=(arr[i+2]/rMax)*len;
+
+  
+  for(i=0;i<len-3;i++){
+    slot3=(arr[i+3]/rMax)*len;
+
+    __builtin_prefetch(&table[slot2]);
+    __builtin_prefetch(&table[slot3]);
+
+  
     temp=(node_8*)(nodes+i*sizeof(node_8));
-    temp->index=table[slot];
-    table[slot]=i+1;
+    temp->index=table[slot0];
+    table[slot0]=i+1;
     temp->val=arr[i];
-  }
+    slot0=slot1;
+    slot1=slot2;
+    slot2=slot3;
+    }
+
+  __builtin_prefetch(&table[slot1]);
+  __builtin_prefetch(&table[slot2]);
+
+  temp=(node_8*)(nodes+i*sizeof(node_8));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+  slot0=slot1;
+  slot1=slot2;
+  __builtin_prefetch(&table[slot1]);
+  i++;
+  temp=(node_8*)(nodes+i*sizeof(node_8));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+
+  slot0=slot1;
+  i++;
+  temp=(node_8*)(nodes+i*sizeof(node_8));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+  
   getVals_8(arr, table, base, len);
   f.sort_fun_long(arr, len);
-  free(table);
-  free(nodes);
-}
-
-void prepSort_8_f(double* arr, const size_t len, const void* max,const void* min, sort_funs f){
-  unsigned long fixMax =(*(unsigned long*)max);
-  if(fixMax >> 54 == 0x7ff){
-    fixMax ^= ((1UL)<<53);
-  }
-  const double dif=((*(double*)(&fixMax))-(*(double*)min))+1.1;
-  int* table=calloc(len,sizeof(int));
-  void* nodes=malloc(len*sizeof(node_8));
-  const long base=((long)nodes)-sizeof(node_8);
-  unsigned int slot;
-  unsigned long val;
-  node_8* temp;
-  for(int i =0;i<len;i++){
-    val = arr[i];
-    slot=(val/dif)*len;
-    temp=(node_8*)(nodes+i*sizeof(node_8));
-    temp->index=table[slot];
-    table[slot]=i+1;
-    temp->val=val;
-  }
-  getVals_8((long*)arr, table, base, len);
-  f.sort_fun_long((long*)arr, len);
   free(table);
   free(nodes);
 }
@@ -263,70 +243,65 @@ void getVals_4(int* arr,int* table, const long base, const size_t len){
   }
 }
 
-void prepSort_4_f(float* arr, const size_t len, const void* max,const void* min, sort_funs f){
-    unsigned int fixMax =(*(unsigned int*)max);
-    if(fixMax >> 24 == 0x7f){
-      fixMax ^= ((1)<<23);
-    }
-    const double dif=((*(float*)(&fixMax))-(*((float*)min)))+1.1;
-    int* table=calloc(len,sizeof(int));
-    void* nodes=malloc(len*sizeof(node_4_f));
-    const long base=((long)nodes)-sizeof(node_4_f);
-    f_ui slot;
-    node_4_f* temp;
-    float val;
-    const float flen = len;
-    for(int i =0;i<len;i++){
-      val = arr[i];
-      slot.ui = (val/dif)*flen;
-      temp=(node_4_f*)(nodes+i*sizeof(node_4_f));
-      temp->index=table[slot.ui];
-      table[slot.ui]=i+1;
-      temp->val=val;
-  }
-  getVals_4((int*)arr, table, base, len);
-  f.sort_fun_int((int*)arr, len);
-  free(table);
-  free(nodes);
-}
-void prepSort_4_i(int* arr, const size_t len, const void* max,const void* min, sort_funs f){
+
+void prepSort_4(int* arr, const size_t len, const void* max,const void* min, sort_funs f){
   const unsigned long ulMin=(*(unsigned long*)min);
-  unsigned long dif=(*(unsigned long*)max)-ulMin;
-  if(dif<=len){
-    dif++;
-    //assumed < 2^31 items always
-    int* buckets=calloc(dif, sizeof(int));
-    for(int i=0;i<len;i++){
-      buckets[arr[i]]++;
-    }
-    int arrIndex=0;
-    for(int i=0;i<dif;i++){
-      for(int j=0;j<buckets[i];j++){
-	arr[arrIndex]=i;
-	arrIndex++;
-      }
-    }
-    free(buckets);
-    return;
-  }
-  /* Use if len smaller
-  int down_shift= __builtin_clz(len)+1;
-  slot = arr[i]>>down_shift;
-  */
+  const double rMax=((*(unsigned long*)max)-ulMin)+1.1;
 
   int* table=calloc(len,sizeof(int));
   void* nodes=malloc(len*sizeof(node_4));
   const long base=((long)nodes)-sizeof(node_4);
-  unsigned int slot;
+  unsigned int slot0, slot1, slot2, slot3;
   node_4* temp;
-  const double rMax=dif+1.1;
-  for(int i =0;i<len;i++){
-    slot=(arr[i]/rMax)*len;
+  int i;
+  
+  slot0=(arr[0]/rMax)*len;
+  __builtin_prefetch(&table[slot0]);
+  slot1=(arr[1]/rMax)*len;
+  slot2=(arr[i+2]/rMax)*len;
+
+  
+  for(i=0;i<len-3;i++){
+    slot3=(arr[i+3]/rMax)*len;
+
+    __builtin_prefetch(&table[slot2]);
+    __builtin_prefetch(&table[slot3]);
+
+  
     temp=(node_4*)(nodes+i*sizeof(node_4));
-    temp->index=table[slot];
-    table[slot]=i+1;
+    temp->index=table[slot0];
+    table[slot0]=i+1;
     temp->val=arr[i];
-  }
+    slot0=slot1;
+    slot1=slot2;
+    slot2=slot3;
+    }
+
+  __builtin_prefetch(&table[slot1]);
+  __builtin_prefetch(&table[slot2]);
+
+  temp=(node_4*)(nodes+i*sizeof(node_4));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+  slot0=slot1;
+  slot1=slot2;
+  __builtin_prefetch(&table[slot1]);
+  i++;
+  temp=(node_4*)(nodes+i*sizeof(node_4));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+
+  slot0=slot1;
+  i++;
+  temp=(node_4*)(nodes+i*sizeof(node_4));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
   getVals_4(arr, table, base, len);
   f.sort_fun_int(arr, len);
   free(table);
@@ -352,36 +327,62 @@ void getVals_2(short* arr,int* table, const long base, const size_t len){
 }
 void prepSort_2(short* arr, const size_t len, const void* max,const void* min, sort_funs f){
   const unsigned long ulMin=(*(unsigned long*)min);
-  unsigned long dif=(*(unsigned long*)max)-ulMin;
-  if(dif<=len){
-    dif++;
-    int* buckets=calloc(dif, sizeof(int));
-    for(int i=0;i<len;i++){
-      buckets[arr[i]]++;
-    }
-    int arrIndex=0;
-    for(int i=0;i<dif;i++){
-      for(int j=0;j<buckets[i];j++){
-	arr[arrIndex]=i;
-	arrIndex++;
-      }
-    }
-    free(buckets);
-    return;
-  }
+  const double rMax=((*(unsigned long*)max)-ulMin)+1.1;
+
   int* table=calloc(len,sizeof(int));
   void* nodes=malloc(len*sizeof(node_2));
   const long base=((long)nodes)-sizeof(node_2);
-  unsigned int slot;
+  unsigned int slot0, slot1, slot2, slot3;
   node_2* temp;
-  const double rMax=dif+1.1;
-  for(int i =0;i<len;i++){
-    slot=(arr[i]/rMax)*len;
+  int i;
+  
+  slot0=(arr[0]/rMax)*len;
+  __builtin_prefetch(&table[slot0]);
+  slot1=(arr[1]/rMax)*len;
+  slot2=(arr[i+2]/rMax)*len;
+
+  
+  for(i=0;i<len-3;i++){
+    slot3=(arr[i+3]/rMax)*len;
+
+    __builtin_prefetch(&table[slot2]);
+    __builtin_prefetch(&table[slot3]);
+
+  
     temp=(node_2*)(nodes+i*sizeof(node_2));
-    temp->index=table[slot];
-    table[slot]=i+1;
+    temp->index=table[slot0];
+    table[slot0]=i+1;
     temp->val=arr[i];
-  }
+    slot0=slot1;
+    slot1=slot2;
+    slot2=slot3;
+    }
+
+  __builtin_prefetch(&table[slot1]);
+  __builtin_prefetch(&table[slot2]);
+
+  temp=(node_2*)(nodes+i*sizeof(node_2));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+  slot0=slot1;
+  slot1=slot2;
+  __builtin_prefetch(&table[slot1]);
+  i++;
+  temp=(node_2*)(nodes+i*sizeof(node_2));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+
+  slot0=slot1;
+  i++;
+  temp=(node_2*)(nodes+i*sizeof(node_2));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
   getVals_2(arr, table, base, len);
   f.sort_fun_short(arr, len);
   free(table);
@@ -407,37 +408,62 @@ void getVals_1(char* arr,int* table, const long base, const size_t len){
 }
 void prepSort_1(char* arr, const size_t len, const void* max,const void* min, sort_funs f){
   const unsigned long ulMin=(*(unsigned long*)min);
-  unsigned long dif=(*(unsigned long*)max)-ulMin;
-  if(dif<=len){
-    dif++;
-    int* buckets=calloc(dif, sizeof(int));
-    for(int i=0;i<len;i++){
-      buckets[arr[i]]++;
-    }
-    int arrIndex=0;
-    for(int i=0;i<dif;i++){
-      for(int j=0;j<buckets[i];j++){
-	arr[arrIndex]=i;
-	arrIndex++;
-      }
-    }
-    free(buckets);
-    return;
-  }
+  const double rMax=((*(unsigned long*)max)-ulMin)+1.1;
+
   int* table=calloc(len,sizeof(int));
   void* nodes=malloc(len*sizeof(node_1));
   const long base=((long)nodes)-sizeof(node_1);
-  unsigned int slot;
+  unsigned int slot0, slot1, slot2, slot3;
   node_1* temp;
+  int i;
+  
+  slot0=(arr[0]/rMax)*len;
+  __builtin_prefetch(&table[slot0]);
+  slot1=(arr[1]/rMax)*len;
+  slot2=(arr[i+2]/rMax)*len;
 
-  const double rMax=dif+1.1;
-  for(int i =0;i<len;i++){
-    slot=(arr[i]/rMax)*len;
+  
+  for(i=0;i<len-3;i++){
+    slot3=(arr[i+3]/rMax)*len;
+
+    __builtin_prefetch(&table[slot2]);
+    __builtin_prefetch(&table[slot3]);
+
+  
     temp=(node_1*)(nodes+i*sizeof(node_1));
-    temp->index=table[slot];
-    table[slot]=i+1;
+    temp->index=table[slot0];
+    table[slot0]=i+1;
     temp->val=arr[i];
-  }
+    slot0=slot1;
+    slot1=slot2;
+    slot2=slot3;
+    }
+
+  __builtin_prefetch(&table[slot1]);
+  __builtin_prefetch(&table[slot2]);
+
+  temp=(node_1*)(nodes+i*sizeof(node_1));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+  slot0=slot1;
+  slot1=slot2;
+  __builtin_prefetch(&table[slot1]);
+  i++;
+  temp=(node_1*)(nodes+i*sizeof(node_1));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
+
+  slot0=slot1;
+  i++;
+  temp=(node_1*)(nodes+i*sizeof(node_1));
+  temp->index=table[slot0];
+  table[slot0]=i+1;
+  temp->val=arr[i];
+
   getVals_1(arr, table, base, len);
   f.sort_fun_char(arr, len);
   free(table);

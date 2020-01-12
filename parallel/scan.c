@@ -43,7 +43,7 @@ int* scan_1(int* arr, int len){
 }
 
 
-void scan_2(int* arr, int len){
+void scan_3(int* arr, int len){
   int upper_bound = log_upper(len)-1;
   for(int i=0;i<=upper_bound;i++){
     for(int j=0;j<len;j+=(1<<(i+1))){
@@ -60,14 +60,31 @@ void scan_2(int* arr, int len){
   }
 }
 
+void scan_2(int* arr, int len){
+  int upper_bound = log_upper(len)-1;
+  for(int i=0;i<=upper_bound;i++){
+    for(int j=0;j<len>>(i+1);j++){
+	arr[(j<<(i+1)) + (1<<(i+1))-1] = arr[(j<<(i+1)) + (1<<(i))-1] + arr[(j<<(i+1)) + (1<<(i+1))-1];
+    }
+  }
+    arr[len-1] = 0;
+  for(int i=upper_bound;i>=0; i--){
+    for(int j=0;j<len>>(i+1);j++){
+      int t = arr[(j<<(i+1)) + (1<<(i))-1];
+      arr[(j<<(i+1)) + (1<<(i))-1] =  arr[(j<<(i+1)) + (1<<(i+1))-1];
+      arr[(j<<(i+1)) + (1<<(i+1))-1]+= t;
+    }
+  }
 
-#define size (1<<22)
-#define max RAND_MAX
+}
+
+#define size (1<<7)
+#define max 100
 int main(){
   srand(time(NULL));
   int* arr= (int*)calloc(size, sizeof(int));
   for(int i=0;i<size;i++){
-    arr[i] = rand()%max;
+    arr[i] = i+1;//rand()%max;
   }
 
   int* arr2= (int*)calloc(size, sizeof(int));
@@ -79,6 +96,9 @@ int main(){
   clock_gettime(CLOCK_MONOTONIC, &t2);
   scan_2(arr2, size);
   clock_gettime(CLOCK_MONOTONIC, &t3);
+  for(int i=0;i<size;i++){
+    printf("Arr[%d]: %d\n", i, arr2[i]);
+  }
   printf("Scan1: %2.lf us -> (%2.lf ms)\n", getDiff(t1, t2), getDiff(t1, t2)/1000.0);
   printf("Scan2: %2.lf us -> (%2.lf ms)\n", getDiff(t2, t3), getDiff(t2, t3)/1000.0);
 ;
